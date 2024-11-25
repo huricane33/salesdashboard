@@ -126,6 +126,8 @@ if uploaded_file:
         )
         # 2. Month-to-Month Store Comparison
         st.header("Month-to-Month Comparison Between Stores")
+
+        # Bar chart for store sales comparison
         store_comparison_chart = px.bar(
             store_comparison,
             x="Month",
@@ -138,6 +140,26 @@ if uploaded_file:
         store_comparison_chart.update_traces(hovertemplate="Total Sales: %{y:,.0f}<br>Month: %{x}")
         st.plotly_chart(store_comparison_chart)
 
+        # Option to show or hide the detailed data table
+        show_table = st.checkbox("Show Detailed Data Table", value=False)
+
+        if show_table:
+            st.subheader("Detailed Data Used in the Chart")
+
+            # Create a pivot table for better readability
+            detailed_store_table = store_comparison.pivot_table(
+                values="Sales",
+                index="Store",
+                columns="Month",
+                aggfunc="sum",
+                fill_value=0
+            )
+
+            # Format the numbers with commas and no decimal places
+            detailed_store_table = detailed_store_table.applymap(lambda x: "{:,.0f}".format(x))
+
+            # Display the data table
+            st.dataframe(detailed_store_table)
         # 3. Month-to-Month Sales for All Kelompok Barang (Detailed View)
         st.header("Month-to-Month Sales for All Kelompok Barang (Detailed View)")
 
