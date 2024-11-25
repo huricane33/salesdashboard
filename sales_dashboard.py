@@ -141,13 +141,13 @@ if uploaded_file:
         st.plotly_chart(store_comparison_chart)
 
         # Option to show or hide the detailed data table
-        show_table = st.checkbox("Show Detailed Data Table", value=False)
+        show_table = st.checkbox("Show Detailed Data Table with Month-to-Month Changes", value=False)
 
         if show_table:
-            st.subheader("Detailed Data Used in the Chart")
+            st.subheader("Detailed Data with Month-to-Month Changes")
 
-            # Create a pivot table for better readability
-            detailed_store_table = store_comparison.pivot_table(
+            # Create pivot table for sales data
+            store_sales_table = store_comparison.pivot_table(
                 values="Sales",
                 index="Store",
                 columns="Month",
@@ -155,11 +155,34 @@ if uploaded_file:
                 fill_value=0
             )
 
-            # Format the numbers with commas and no decimal places
-            detailed_store_table = detailed_store_table.applymap(lambda x: "{:,.0f}".format(x))
+            # Ensure months are sorted chronologically
+            # Convert columns to datetime for sorting
+            store_sales_table.columns = pd.to_datetime(store_sales_table.columns, format='%d_%b', errors='coerce')
+            store_sales_table = store_sales_table.reindex(sorted(store_sales_table.columns), axis=1)
+            store_sales_table.columns = store_sales_table.columns.strftime('%d_%b')
 
-            # Display the data table
-            st.dataframe(detailed_store_table)
+            # Calculate month-to-month differences
+            store_sales_diff = store_sales_table.diff(axis=1)
+
+            # Combine sales and differences into one DataFrame
+            store_sales_combined = pd.concat(
+                [store_sales_table, store_sales_diff],
+                keys=["Sales", "Difference"],
+                axis=1
+            )
+
+            # Flatten the MultiIndex columns
+            store_sales_combined.columns.names = ['Type', 'Month']
+            store_sales_combined.reset_index(inplace=True)
+            store_sales_combined.columns = [
+                f"{col[0]}_{col[1]}" if col[0] != 'Store' else 'Store' for col in store_sales_combined.columns
+            ]
+
+            # Optionally format the numbers
+            store_sales_combined.fillna(0, inplace=True)
+            st.dataframe(
+                store_sales_combined.style.format("{:,.0f}", subset=store_sales_combined.columns[1:])
+            )
         # 3. Month-to-Month Sales for All Kelompok Barang (Detailed View)
         st.header("Month-to-Month Sales for All Kelompok Barang (Detailed View)")
 
