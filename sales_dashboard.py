@@ -78,21 +78,6 @@ if uploaded_file:
         group_sales = filtered_data.groupby(['Group', 'Month'])['Sales'].sum().reset_index()
         store_comparison = filtered_data.groupby(['Month', 'Store'])['Sales'].sum().reset_index()
 
-        # 1. Total Group Sales Overview
-        st.header("Total Group Sales Overview")
-
-        # Line chart for group sales trends
-        group_sales_chart = px.line(
-            group_sales,
-            x="Month",
-            y="Sales",
-            color="Group",
-            title="Total Sales by Group over Months",
-            labels={"Sales": "Total Sales", "Month": "Month"}
-        )
-        group_sales_chart.update_traces(hovertemplate="Total Sales: %{y:,.0f}<br>Month: %{x}")
-        st.plotly_chart(group_sales_chart)
-
         # Detailed table for group sales
         st.subheader("Detailed Group Sales by Month")
 
@@ -108,9 +93,19 @@ if uploaded_file:
         # Calculate month-to-month differences
         group_sales_diff = group_sales_table.diff(axis=1)
 
+        # Compute the total sales per month and append as a new row
+        total_sales_row = group_sales_table.sum(axis=0)
+        total_sales_row.name = 'Grand Total'
+        group_sales_table_with_total = pd.concat([group_sales_table, total_sales_row.to_frame().T])
+
+        # Similarly for differences
+        total_diff_row = group_sales_diff.sum(axis=0)
+        total_diff_row.name = 'Grand Total'
+        group_sales_diff_with_total = pd.concat([group_sales_diff, total_diff_row.to_frame().T])
+
         # Combine sales and differences into one DataFrame
         group_sales_combined = pd.concat(
-            [group_sales_table, group_sales_diff],
+            [group_sales_table_with_total, group_sales_diff_with_total],
             keys=["Sales", "Difference"],
             axis=1
         )
@@ -124,25 +119,11 @@ if uploaded_file:
             f"{col[0]}_{col[1]}" if col[0] != 'Group' else 'Group' for col in group_sales_combined.columns
         ]
 
-        # Display the combined table
-        st.dataframe(group_sales_combined)
-
-        # Display sum table if more than one month is selected
-        if len(selected_months) > 1:
-            st.subheader("Sum Table for Total Group Sales")
-
-            # Calculate total sales per group
-            sum_table = group_sales_table.sum(axis=1).reset_index()
-            sum_table.columns = ["Group", "Total Sales"]
-
-            # Add Grand Total row
-            grand_total = pd.DataFrame([["Grand Total", sum_table["Total Sales"].sum()]],
-                                       columns=["Group", "Total Sales"])
-            sum_table_with_total = pd.concat([sum_table, grand_total], ignore_index=True)
-
-            # Display the sum table with total
-            st.dataframe(sum_table_with_total)
-
+        # Optionally format the numbers
+        group_sales_combined.fillna(0, inplace=True)
+        st.dataframe(
+            group_sales_combined.style.format("{:,.0f}", subset=group_sales_combined.columns[1:])
+        )
         # 2. Month-to-Month Store Comparison
         st.header("Month-to-Month Comparison Between Stores")
         store_comparison_chart = px.bar(
