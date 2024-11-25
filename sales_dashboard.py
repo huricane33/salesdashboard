@@ -95,6 +95,8 @@ if uploaded_file:
 
         # Detailed table for group sales
         st.subheader("Detailed Group Sales by Month")
+
+        # Create pivot table for group sales
         group_sales_table = group_sales.pivot_table(
             values="Sales",
             index="Group",
@@ -102,7 +104,28 @@ if uploaded_file:
             aggfunc="sum",
             fill_value=0
         )
-        st.dataframe(group_sales_table)
+
+        # Calculate month-to-month differences
+        group_sales_diff = group_sales_table.diff(axis=1)
+
+        # Combine sales and differences into one DataFrame
+        group_sales_combined = pd.concat(
+            [group_sales_table, group_sales_diff],
+            keys=["Sales", "Difference"],
+            axis=1
+        )
+
+        # Reset column names and index
+        group_sales_combined.columns.names = ['Type', 'Month']
+        group_sales_combined.reset_index(inplace=True)
+
+        # Flatten the MultiIndex columns
+        group_sales_combined.columns = [
+            f"{col[0]}_{col[1]}" if col[0] != 'Group' else 'Group' for col in group_sales_combined.columns
+        ]
+
+        # Display the combined table
+        st.dataframe(group_sales_combined)
 
         # Display sum table if more than one month is selected
         if len(selected_months) > 1:
@@ -113,7 +136,8 @@ if uploaded_file:
             sum_table.columns = ["Group", "Total Sales"]
 
             # Add Grand Total row
-            grand_total = pd.DataFrame([["Grand Total", sum_table["Total Sales"].sum()]], columns=["Group", "Total Sales"])
+            grand_total = pd.DataFrame([["Grand Total", sum_table["Total Sales"].sum()]],
+                                       columns=["Group", "Total Sales"])
             sum_table_with_total = pd.concat([sum_table, grand_total], ignore_index=True)
 
             # Display the sum table with total
