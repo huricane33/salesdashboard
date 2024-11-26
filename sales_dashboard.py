@@ -401,7 +401,7 @@ if uploaded_file:
 
         # -------------------- 4. Kelompok Barang Comparison --------------------
         with tab4:
-            st.header("Comparison of Kelompok Barang by BarChart")
+            st.header("Kelompok Barang Comparison")
 
             # Convert 'Month' to datetime for sorting
             kelompok_data['Month'] = pd.to_datetime(kelompok_data['Month'], format='%d_%b', errors='coerce')
@@ -409,26 +409,56 @@ if uploaded_file:
             kelompok_data.sort_values('Month', inplace=True)
             kelompok_data['Month_Display'] = kelompok_data['Month'].dt.strftime('%d_%b')
 
-            # Modify the comparison chart to use different colors for each Store
-            comparison_chart = px.bar(
-                kelompok_data,
-                x="Month_Display",
-                y="Sales",
-                color="Store",
-                barmode="group",
-                title="Sales Comparison for Selected Kelompok Barang",
-                labels={"Sales": "Total Sales", "Month_Display": "Month", "Store": "Store"},
-                color_discrete_sequence=color_palette
-            )
-            comparison_chart.update_traces(hovertemplate="Month: %{x}<br>Total Sales: %{y:,.0f}")
-            comparison_chart.update_layout(
-                xaxis_title='Month',
-                yaxis_title='Total Sales',
-                legend_title='Store',
-                hovermode='x unified'
-            )
-            st.plotly_chart(comparison_chart, use_container_width=True)
+            if len(selected_categories) == 1:
+                # If only one Kelompok Barang is selected, display the bar chart
+                st.subheader(f"Sales Comparison for {selected_categories[0]}")
 
+                comparison_chart = px.bar(
+                    kelompok_data,
+                    x="Month_Display",
+                    y="Sales",
+                    color="Store",
+                    barmode="group",
+                    title=f"Sales Comparison for {selected_categories[0]}",
+                    labels={"Sales": "Total Sales", "Month_Display": "Month", "Store": "Store"},
+                    color_discrete_sequence=color_palette
+                )
+                comparison_chart.update_traces(hovertemplate="Month: %{x}<br>Total Sales: %{y:,.0f}")
+                comparison_chart.update_layout(
+                    xaxis_title='Month',
+                    yaxis_title='Total Sales',
+                    legend_title='Store',
+                    hovermode='x unified'
+                )
+                st.plotly_chart(comparison_chart, use_container_width=True)
+            else:
+                # If multiple Kelompok Barang are selected, display individual charts
+                st.subheader("Sales Comparison for Selected Kelompok Barang")
+
+                # Use facet_col to create individual charts
+                comparison_chart = px.bar(
+                    kelompok_data,
+                    x="Month_Display",
+                    y="Sales",
+                    color="Store",
+                    barmode="group",
+                    facet_col=category_column,
+                    facet_col_wrap=2,
+                    title="Sales Comparison for Selected Kelompok Barang",
+                    labels={"Sales": "Total Sales", "Month_Display": "Month", "Store": "Store",
+                            category_column: "Kelompok Barang"},
+                    color_discrete_sequence=color_palette
+                )
+                comparison_chart.update_traces(hovertemplate="Month: %{x}<br>Total Sales: %{y:,.0f}")
+                comparison_chart.update_layout(
+                    xaxis_title='Month',
+                    yaxis_title='Total Sales',
+                    legend_title='Store',
+                    hovermode='x unified',
+                    title_font_size=20,
+                    height=600  # Adjust the height as needed
+                )
+                st.plotly_chart(comparison_chart, use_container_width=True)
         # -------------------- 5. Kelompok Barang Visualization --------------------
         with tab5:
             st.header(f"Comparison of Kelompok Barang by PieChart")
