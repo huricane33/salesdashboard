@@ -90,7 +90,7 @@ if uploaded_file:
             fill_value=0
         )
 
-        # Calculate month-to-month differences
+        # Calculate month-to-month absolute differences
         group_sales_diff = group_sales_table.diff(axis=1)
 
         # Compute the total sales per month and append as a new row
@@ -103,27 +103,84 @@ if uploaded_file:
         total_diff_row.name = 'Grand Total'
         group_sales_diff_with_total = pd.concat([group_sales_diff, total_diff_row.to_frame().T])
 
-        # Combine sales and differences into one DataFrame
-        group_sales_combined = pd.concat(
-            [group_sales_table_with_total, group_sales_diff_with_total],
-            keys=["Sales", "Difference"],
-            axis=1
-        )
+        # Checkbox to show percentage differences
+        show_percentage = st.checkbox("Show Percentage Differences", value=False)
 
-        # Reset column names and index
-        group_sales_combined.columns.names = ['Type', 'Month']
-        group_sales_combined.reset_index(inplace=True)
+        if show_percentage:
+            # Calculate month-to-month percentage differences
+            group_sales_pct_change = group_sales_table.pct_change(axis=1) * 100
 
-        # Flatten the MultiIndex columns
-        group_sales_combined.columns = [
-            f"{col[0]}_{col[1]}" if col[0] != 'Group' else 'Group' for col in group_sales_combined.columns
-        ]
+            # Compute percentage change for totals
+            total_pct_change_row = group_sales_table_with_total.pct_change(axis=1).iloc[-1] * 100
+            total_pct_change_row.name = 'Grand Total'
+            group_sales_pct_change_with_total = pd.concat([group_sales_pct_change, total_pct_change_row.to_frame().T])
 
-        # Optionally format the numbers
-        group_sales_combined.fillna(0, inplace=True)
-        st.dataframe(
-            group_sales_combined.style.format("{:,.0f}", subset=group_sales_combined.columns[1:])
-        )
+            # Combine sales, absolute differences, and percentage differences into one DataFrame
+            group_sales_combined = pd.concat(
+                [group_sales_table_with_total, group_sales_diff_with_total, group_sales_pct_change_with_total],
+                keys=["Sales", "Difference", "Percent Change"],
+                axis=1
+            )
+
+            # Reset column names and index
+            group_sales_combined.columns.names = ['Type', 'Month']
+            group_sales_combined.reset_index(inplace=True)
+
+            # Flatten the MultiIndex columns
+            group_sales_combined.columns = [
+                f"{col[0]}_{col[1]}" if col[0] != 'Group' else 'Group' for col in group_sales_combined.columns
+            ]
+
+            # Fill NaN and infinite values
+            group_sales_combined.replace([np.inf, -np.inf], np.nan, inplace=True)
+            group_sales_combined.fillna(0, inplace=True)
+
+
+            # Function to format percentage changes with arrows
+            def format_percentage_with_arrows(val):
+                try:
+                    val_num = float(val)
+                    arrow = '↑' if val_num > 0 else '↓' if val_num < 0 else ''
+                    return f"{val_num:,.2f}% {arrow}"
+                except:
+                    return val
+
+
+            # Format the numbers
+            for col in group_sales_combined.columns[1:]:
+                if "Percent Change" in col:
+                    group_sales_combined[col] = group_sales_combined[col].apply(format_percentage_with_arrows)
+                else:
+                    group_sales_combined[col] = group_sales_combined[col].apply(lambda x: f"{x:,.0f}")
+
+            # Display the combined table
+            st.dataframe(group_sales_combined)
+        else:
+            # Combine sales and differences into one DataFrame
+            group_sales_combined = pd.concat(
+                [group_sales_table_with_total, group_sales_diff_with_total],
+                keys=["Sales", "Difference"],
+                axis=1
+            )
+
+            # Reset column names and index
+            group_sales_combined.columns.names = ['Type', 'Month']
+            group_sales_combined.reset_index(inplace=True)
+
+            # Flatten the MultiIndex columns
+            group_sales_combined.columns = [
+                f"{col[0]}_{col[1]}" if col[0] != 'Group' else 'Group' for col in group_sales_combined.columns
+            ]
+
+            # Fill NaN values
+            group_sales_combined.fillna(0, inplace=True)
+
+            # Format the numbers
+            for col in group_sales_combined.columns[1:]:
+                group_sales_combined[col] = group_sales_combined[col].apply(lambda x: f"{x:,.0f}")
+
+            # Display the combined table
+            st.dataframe(group_sales_combined)
         # 2. Month-to-Month Store Comparison
         st.header("Month-to-Month Comparison Between Stores")
 
@@ -269,22 +326,22 @@ if uploaded_file:
         pie_chart.update_traces(hovertemplate="Sales: %{value:,.0f}<br>Store: %{label}")
         st.plotly_chart(pie_chart)
 
-        # 6. Trend Analysis for Selected Kelompok Barang
-        st.header("Trend Analysis for Selected Kelompok Barang")
+        # 6. Sales Trend for Selected Kelompok Barang by Store
+        st.header("Sales Trend for Selected Kelompok Barang by Store")
 
         if kelompok_data.empty:
             st.write("No data available for the selected Kelompok Barang and filters.")
         else:
             # Prepare data for trend analysis
-            trend_data = kelompok_data.groupby(['Month', category_column])['Sales'].sum().reset_index()
+            trend_data = kelompok_data.groupby(['Month', 'Store', category_column])['Sales'].sum().reset_index()
 
-            # Convert 'Month' to datetime using the format '%d_%b'
+            # Convert 'Month' to datetime for sorting
             trend_data['Month'] = pd.to_datetime(trend_data['Month'], format='%d_%b', errors='coerce')
 
             # Sort the data by 'Month'
             trend_data.sort_values('Month', inplace=True)
 
-            # Convert 'Month' back to string format for display, e.g., '01_Jan'
+            # Convert 'Month' back to string format for display
             trend_data['Month_Display'] = trend_data['Month'].dt.strftime('%d_%b')
 
             # Create line chart
@@ -292,11 +349,15 @@ if uploaded_file:
                 trend_data,
                 x='Month_Display',
                 y='Sales',
-                color=category_column,
-                title='Sales Trend for Selected Kelompok Barang',
+                color='Store',
+                line_group='Store',
+                facet_col=category_column,
+                facet_col_wrap=2,
+                title='Sales Trend for Selected Kelompok Barang by Store',
                 labels={
                     'Sales': 'Total Sales',
                     'Month_Display': 'Month',
+                    'Store': 'Store',
                     category_column: 'Kelompok Barang'
                 },
                 markers=True
@@ -305,8 +366,9 @@ if uploaded_file:
             trend_chart.update_layout(
                 xaxis_title='Month',
                 yaxis_title='Total Sales',
-                legend_title='Kelompok Barang',
-                title_font_size=20
+                legend_title='Store',
+                title_font_size=20,
+                height=600  # Adjust the height as needed
             )
 
             trend_chart.update_traces(
