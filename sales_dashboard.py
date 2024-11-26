@@ -150,7 +150,28 @@ if uploaded_file:
             # Checkbox to show percentage differences
             show_percentage = st.checkbox("Show Percentage Differences", value=False)
 
-            if show_percentage:
+            # Checkbox to show contribution to grand total
+            show_contribution = st.checkbox("Show Contribution to Grand Total", value=False)
+
+            if show_contribution:
+                # Calculate the contribution of each group to the grand total
+                # First, compute the grand total across all groups for each month
+                grand_total_sales = group_sales_table_with_total.loc['Grand Total']
+
+                # Calculate the contribution percentages
+                group_contribution = (group_sales_table_with_total.div(grand_total_sales) * 100).round(2)
+
+                # Reset index to prepare for display
+                group_contribution.reset_index(inplace=True)
+
+                # Format the numbers
+                for col in group_contribution.columns[1:]:
+                    group_contribution[col] = group_contribution[col].apply(lambda x: f"{x:.2f}%")
+
+                # Display the table
+                st.dataframe(group_contribution)
+
+            elif show_percentage:
                 # Calculate month-to-month percentage differences
                 group_sales_pct_change = group_sales_table.pct_change(axis=1) * 100
 
@@ -181,6 +202,7 @@ if uploaded_file:
                 group_sales_combined.replace([np.inf, -np.inf], np.nan, inplace=True)
                 group_sales_combined.fillna(0, inplace=True)
 
+
                 # Function to format percentage changes with arrows
                 def format_percentage_with_arrows(val):
                     try:
@@ -189,6 +211,7 @@ if uploaded_file:
                         return f"{val_num:,.2f}% {arrow}"
                     except:
                         return val
+
 
                 # Format the numbers
                 for col in group_sales_combined.columns[1:]:
@@ -245,9 +268,9 @@ if uploaded_file:
                 legend_title='Group',
                 hovermode='x unified'
             )
-            group_sales_chart.update_traces(hovertemplate="Group: %{legendgroup}<br>Month: %{x}<br>Total Sales: %{y:,.0f}")
+            group_sales_chart.update_traces(
+                hovertemplate="Group: %{legendgroup}<br>Month: %{x}<br>Total Sales: %{y:,.0f}")
             st.plotly_chart(group_sales_chart, use_container_width=True)
-
         # -------------------- 2. Store Comparison --------------------
         with tab2:
             st.header("Month-to-Month Comparison Between Stores")
