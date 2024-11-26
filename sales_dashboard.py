@@ -115,8 +115,8 @@ if uploaded_file:
             "Group Sales Overview",
             "Store Comparison",
             "Detailed View",
-            "Kelompok Barang Comparison",
-            "Kelompok Barang Visualization",
+            "Kelompok Barang BarChart",
+            "Kelompok Barang PieChart",
             "Sales Trend",
             "Top/Bottom Performers"
         ])
@@ -263,7 +263,7 @@ if uploaded_file:
                 labels={"Sales": "Total Sales", "Month": "Month"},
                 color_discrete_sequence=color_palette
             )
-            store_comparison_chart.update_traces(hovertemplate="Store: %{legendgroup}<br>Month: %{x}<br>Total Sales: %{y:,.0f}")
+            store_comparison_chart.update_traces(hovertemplate="Month: %{x}<br>Total Sales: %{y:,.0f}")
             store_comparison_chart.update_layout(
                 xaxis_title='Month',
                 yaxis_title='Total Sales',
@@ -378,7 +378,7 @@ if uploaded_file:
 
         # -------------------- 4. Kelompok Barang Comparison --------------------
         with tab4:
-            st.header("Comparison of Selected Kelompok Barang")
+            st.header("Comparison of Kelompok Barang by BarChart")
 
             # Convert 'Month' to datetime for sorting
             kelompok_data['Month'] = pd.to_datetime(kelompok_data['Month'], format='%d_%b', errors='coerce')
@@ -397,7 +397,7 @@ if uploaded_file:
                 labels={"Sales": "Total Sales", "Month_Display": "Month", "Store": "Store"},
                 color_discrete_sequence=color_palette
             )
-            comparison_chart.update_traces(hovertemplate="Store: %{legendgroup}<br>Month: %{x}<br>Total Sales: %{y:,.0f}")
+            comparison_chart.update_traces(hovertemplate="Month: %{x}<br>Total Sales: %{y:,.0f}")
             comparison_chart.update_layout(
                 xaxis_title='Month',
                 yaxis_title='Total Sales',
@@ -408,7 +408,7 @@ if uploaded_file:
 
         # -------------------- 5. Kelompok Barang Visualization --------------------
         with tab5:
-            st.header(f"Sales Visualization for Selected Kelompok Barang")
+            st.header(f"Comparison of Kelompok Barang by PieChart")
             pie_chart = px.pie(
                 kelompok_data,
                 names="Store",
@@ -466,7 +466,7 @@ if uploaded_file:
 
                 trend_chart.update_traces(
                     customdata=trend_data[[category_column]],
-                    hovertemplate="Store: %{legendgroup}<br>Month: %{x}<br>Total Sales: %{y:,.0f}<br>Kelompok Barang: %{customdata[0]}"
+                    hovertemplate="Month: %{x}<br>Total Sales: %{y:,.0f}<br>Kelompok Barang: %{customdata[0]}"
                 )
 
                 st.plotly_chart(trend_chart, use_container_width=True)
