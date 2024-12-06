@@ -52,7 +52,7 @@ if uploaded_file:
         with st.sidebar.expander("Filters", expanded=True):
             st.header("General Filters")
             selected_groups = st.multiselect(
-                "Select Groups (e.g., BZR, GRC, FRS):",
+                "Select Divisions (e.g., BZR, GRC, FRS):",
                 options=reshaped_data['Group'].unique(),
                 default=reshaped_data['Group'].unique(),
                 help="Filter data by selecting one or more groups."
