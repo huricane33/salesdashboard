@@ -72,9 +72,9 @@ if uploaded_file is not None:
                     raw_data['Group'] = raw_data['Grouping'].astype(str).str[:3].str.upper()
 
                 # Combine GRC and FRS into GRC+FRS
-                raw_data['Group'] = raw_data['Group'].replace({'GRC': 'GRC+FRS', 'FRS': 'GRC+FRS'})
+                # raw_data['Group'] = raw_data['Group'].replace({'GRC': 'GRC+FRS', 'FRS': 'GRC+FRS'})
                 # Filter only GRC+FRS and BZR
-                raw_data = raw_data[raw_data['Group'].isin(['GRC+FRS', 'BZR'])]
+                raw_data = raw_data[raw_data['Group'].isin(['GRC', 'FRS', 'BZR'])]
 
                 # Create a Month_Display column
                 raw_data['Month_Display'] = raw_data['Date'].dt.strftime('%b %Y')
