@@ -720,6 +720,7 @@ if uploaded_file is not None:
                 """)
 
                 # Recalculate Gross Margin to ensure correctness
+                filtered_data['Gross Margin'] = filtered_data['Penjualan']-filtered_data['HPP']
                 # Combine 'GRC' and 'FRS' into 'GRC+FRS' if not already combined
                 filtered_data['Group'] = filtered_data['Group'].replace({'GRC': 'GRC+FRS', 'FRS': 'GRC+FRS'})
 
