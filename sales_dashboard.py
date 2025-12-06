@@ -36,12 +36,7 @@ if uploaded_file is not None:
                 rename_dict = {col.lower(): col for col in raw_data.columns}
                 raw_data.rename(columns=rename_dict, inplace=True)
 
-                # Convert numeric columns
-                numeric_cols = ["Penjualan", "HPP", "Gross Margin", "Stock Value"]
-                for col in numeric_cols:
-                    # Remove thousand separators '.' and replace decimal ',' with '.' if necessary
-                    raw_data[col] = raw_data[col].astype(str).str.replace('.', '', regex=False).str.replace(',', '.', regex=False)
-                    raw_data[col] = pd.to_numeric(raw_data[col], errors='coerce')
+
 
                 # Drop rows with invalid numeric values
                 raw_data.dropna(subset=numeric_cols, inplace=True)
